@@ -11,15 +11,11 @@
     <component-import key="deploymentResultService" interface="com.atlassian.bamboo.deployments.results.service.DeploymentResultService" />
     <component-import key="notificationDispatcher" interface="com.atlassian.bamboo.notification.NotificationDispatcher" />
 
-   <!-- <component key="failedDeploymentNotificationType" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationTypeImpl">
-        <interface>com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType</interface>
-    </component>-->
-
-    <bambooEventListener key="failedDeploymentNotificationEventListener" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationEventListener">
-        <description>Listens for failed deployments</description>
+    <bambooEventListener key="deploymentNotificationEventListener" class="com.carolynvs.bamboo.plugin.deployment_notifications.DeploymentNotificationEventListener">
+        <description>Listens for deployment events. Duplicates what is in core but allows extending the notification types.</description>
     </bambooEventListener>
 
-    <notificationType key="failedDeployment" name="Deployment Failed" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationTypeImpl" weight="100">
+    <notificationType key="failedDeployment" name="Deployment Failed" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType" weight="100">
         <description>Notification sent when a deployment fails.</description>
         <scope>deployment</scope>
     </notificationType>

@@ -1,6 +1,5 @@
 package com.carolynvs.bamboo.plugin.deployment_notifications;
 
-import com.atlassian.bamboo.builder.BuildState;
 import com.atlassian.bamboo.deployments.environments.service.EnvironmentService;
 import com.atlassian.bamboo.deployments.execution.events.DeploymentFinishedEvent;
 import com.atlassian.bamboo.deployments.notification.*;
@@ -18,9 +17,8 @@ import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.lang.annotation.Annotation;
 
-public class FailedDeploymentNotificationEventListener
+public class DeploymentNotificationEventListener
 {
     private static final Logger log = Logger.getLogger(DeploymentNotificationEventListener.class);
 
@@ -28,7 +26,7 @@ public class FailedDeploymentNotificationEventListener
     private final EnvironmentService environmentService;
     private final NotificationDispatcher notificationDispatcher;
 
-    public FailedDeploymentNotificationEventListener(DeploymentResultService deploymentResultService, EnvironmentService environmentService, NotificationDispatcher notificationDispatcher)
+    public DeploymentNotificationEventListener(DeploymentResultService deploymentResultService, EnvironmentService environmentService, NotificationDispatcher notificationDispatcher)
     {
         this.deploymentResultService = deploymentResultService;
         this.environmentService = environmentService;
@@ -38,13 +36,10 @@ public class FailedDeploymentNotificationEventListener
     @EventListener
     public void onDeploymentFinished(@NotNull DeploymentFinishedEvent event)
     {
-        log.info("FailedDeploymentNotificationEventListener.onDeploymentFinished");
+        log.debug("DeploymentFinishedEvent received");
+
         long deploymentResultId = event.getDeploymentResultId();
         final DeploymentResult deploymentResult = deploymentResultService.getDeploymentResult(deploymentResultId);
-
-        BuildState deploymentState = deploymentResult.getDeploymentState();
-        if(deploymentState != BuildState.FAILED)
-            return;
 
         long environmentId = deploymentResult.getEnvironment().getId();
         NotificationSet notificationSet = environmentService.getNotificationSet(environmentId);
@@ -55,12 +50,12 @@ public class FailedDeploymentNotificationEventListener
             @Override
             protected DeploymentFinishedNotification create()
             {
-                return createNotification(deploymentResult);
+            return createNotification(deploymentResult);
             }
         };
 
-        Iterable<NotificationRule> notifications = getApplicableFilters(notificationSet);
-        for (NotificationRule rule : notifications)
+        Iterable<NotificationRule> notificationRules = getNotifications(notificationSet, event);
+        for (NotificationRule rule : notificationRules)
         {
             NotificationRecipient recipient = rule.getNotificationRecipient();
             if (recipient == null)
@@ -87,13 +82,15 @@ public class FailedDeploymentNotificationEventListener
         return deploymentFinishedNotification;
     }
 
-    private Iterable<NotificationRule> getApplicableFilters(NotificationSet notificationSet)
+    private Iterable<NotificationRule> getNotifications(NotificationSet notificationSet, final DeploymentFinishedEvent event)
     {
         return Iterables.filter(notificationSet.getNotificationRules(), new Predicate<NotificationRule>() {
             @Override
-            public boolean apply(@Nullable NotificationRule input) {
-                NotificationType notificationType = input.getNotificationType();
-                return notificationType instanceof FailedDeploymentNotificationType;
+            public boolean apply(@Nullable NotificationRule input)
+            {
+                NotificationType notification = input.getNotificationType();
+                DeploymentNotificationType deploymentNotification = Narrow.downTo(notification, DeploymentNotificationType.class);
+                return deploymentNotification != null && deploymentNotification.isNotificationRequired(event);
             }
         });
     }
