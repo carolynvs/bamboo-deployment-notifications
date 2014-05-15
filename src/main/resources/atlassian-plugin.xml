@@ -7,26 +7,21 @@
         <param name="plugin-logo">images/pluginLogo.png</param>
     </plugin-info>
 
-    <!-- add our i18n resource -->
-    <resource type="i18n" name="i18n" location="deployment-notifications"/>
-    
-    <!-- add our web resources -->
-    <web-resource key="deployment-notifications-resources" name="deployment-notifications Web Resources">
-        <dependency>com.atlassian.auiplugin:ajs</dependency>
-        
-        <resource type="download" name="deployment-notifications.css" location="/css/deployment-notifications.css"/>
-        <resource type="download" name="deployment-notifications.js" location="/js/deployment-notifications.js"/>
-        <resource type="download" name="images/" location="/images"/>
+    <component-import key="environmentService" interface="com.atlassian.bamboo.deployments.environments.service.EnvironmentService" />
+    <component-import key="deploymentResultService" interface="com.atlassian.bamboo.deployments.results.service.DeploymentResultService" />
+    <component-import key="notificationDispatcher" interface="com.atlassian.bamboo.notification.NotificationDispatcher" />
 
-        <context>deployment-notifications</context>
-    </web-resource>
-    
-    <!-- publish our component -->
-    <component key="myPluginComponent" class="com.carolynvs.bamboo.plugin.deployment_notifications.MyPluginComponentImpl" public="true">
-        <interface>com.carolynvs.bamboo.plugin.deployment_notifications.MyPluginComponent</interface>
-    </component>
-    
-    <!-- import from the product container -->
-    <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties" />
-    
+   <!-- <component key="failedDeploymentNotificationType" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationTypeImpl">
+        <interface>com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType</interface>
+    </component>-->
+
+    <bambooEventListener key="failedDeploymentNotificationEventListener" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationEventListener">
+        <description>Listens for failed deployments</description>
+    </bambooEventListener>
+
+    <notificationType key="failedDeployment" name="Deployment Failed" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationTypeImpl" weight="100">
+        <description>Notification sent when a deployment fails.</description>
+        <scope>deployment</scope>
+    </notificationType>
+
 </atlassian-plugin>
