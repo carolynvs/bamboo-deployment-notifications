@@ -16,7 +16,12 @@
     </bambooEventListener>
 
     <notificationType key="failedDeployment" name="Deployment Failed" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType" weight="100">
-        <description>Notification sent when a deployment fails.</description>
+        <description>Notification sent when a deployment fails</description>
+        <scope>deployment</scope>
+    </notificationType>
+
+    <notificationType key="multipleFailedDeployments" name="After X Deployment Failures" class="com.carolynvs.bamboo.plugin.deployment_notifications.MultipleFailedDeploymentsNotificationType" weight="110">
+        <description>Notification sent after multiple deployment failures</description>
         <scope>deployment</scope>
     </notificationType>
 

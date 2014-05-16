@@ -8,15 +8,13 @@ import com.atlassian.bamboo.deployments.results.service.DeploymentResultService;
 import com.atlassian.bamboo.notification.*;
 import com.atlassian.bamboo.util.Narrow;
 import com.atlassian.event.api.EventListener;
-import com.atlassian.spring.container.ContainerContext;
-import com.atlassian.spring.container.ContainerManager;
-import com.atlassian.util.concurrent.LazyReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 
 public class DeploymentNotificationEventListener
 {
@@ -36,53 +34,84 @@ public class DeploymentNotificationEventListener
     @EventListener
     public void onDeploymentFinished(@NotNull DeploymentFinishedEvent event)
     {
-        log.debug("DeploymentFinishedEvent received");
+        try
+        {
+            log.debug("DeploymentFinishedEvent received");
 
-        long deploymentResultId = event.getDeploymentResultId();
-        final DeploymentResult deploymentResult = deploymentResultService.getDeploymentResult(deploymentResultId);
+            long deploymentResultId = event.getDeploymentResultId();
+            final DeploymentResult deploymentResult = deploymentResultService.getDeploymentResult(deploymentResultId);
 
-        long environmentId = deploymentResult.getEnvironment().getId();
-        NotificationSet notificationSet = environmentService.getNotificationSet(environmentId);
-        if (notificationSet == null)
-            return;
+            long environmentId = deploymentResult.getEnvironment().getId();
+            NotificationSet notificationSet = environmentService.getNotificationSet(environmentId);
+            if (notificationSet == null)
+                return;
 
-        LazyReference<DeploymentFinishedNotification> notification = new LazyReference<DeploymentFinishedNotification>() {
-            @Override
-            protected DeploymentFinishedNotification create()
-            {
-            return createNotification(deploymentResult);
-            }
-        };
+            EvaluateNotificationRules(event, deploymentResult, notificationSet);
+        }
+        catch(Exception ex)
+        {
+            log.error("Error in DeploymentNotificationEventListener.onDeploymentFinished");
+            log.error(ex);
+        }
+    }
 
-        Iterable<NotificationRule> notificationRules = getNotifications(notificationSet, event);
+    private void EvaluateNotificationRules(DeploymentFinishedEvent event, DeploymentResult deploymentResult, NotificationSet notificationSet)
+    {
+        HashMap<Class, Notification> notifications = new HashMap<Class, Notification>();
+
+        Iterable<NotificationRule> notificationRules = getNotifications(notificationSet, event, deploymentResult);
         for (NotificationRule rule : notificationRules)
         {
             NotificationRecipient recipient = rule.getNotificationRecipient();
             if (recipient == null)
                 continue;
 
-            DeploymentResultAwareNotificationRecipient deploymentAwareRecipient = Narrow.downTo(recipient, DeploymentResultAwareNotificationRecipient.class);
-            if (deploymentAwareRecipient != null)
-            {
-                deploymentAwareRecipient.setDeploymentResult(deploymentResult);
-            }
-
-            notification.get().addRecipient(recipient);
+            Notification notification = getOrCreateNotification(rule, notifications);
+            addNotificationRecipient(notification, recipient, deploymentResult);
         }
-        notificationDispatcher.dispatchNotifications(notification.get());
+
+        dispatchNotifications(notifications);
     }
 
-    private DeploymentFinishedNotification createNotification(DeploymentResult deploymentResult)
+    private void addNotificationRecipient(Notification notification, NotificationRecipient recipient, DeploymentResult deploymentResult)
     {
-        ContainerContext containerContext = ContainerManager.getInstance().getContainerContext();
-        DeploymentFinishedNotification deploymentFinishedNotification = (DeploymentFinishedNotification) containerContext.createCompleteComponent(DeploymentFinishedNotification.class);
-
-        deploymentFinishedNotification.setDeploymentResult(deploymentResult);
-
-        return deploymentFinishedNotification;
+        DeploymentResultAwareNotificationRecipient deploymentAwareRecipient = Narrow.downTo(recipient, DeploymentResultAwareNotificationRecipient.class);
+        if (deploymentAwareRecipient != null)
+        {
+            deploymentAwareRecipient.setDeploymentResult(deploymentResult);
+        }
+        notification.addRecipient(recipient);
     }
 
-    private Iterable<NotificationRule> getNotifications(NotificationSet notificationSet, final DeploymentFinishedEvent event)
+    private Notification getOrCreateNotification(NotificationRule rule, HashMap<Class, Notification> notifications)
+    {
+        Notification notification;
+
+        DeploymentNotificationType notificationType = (DeploymentNotificationType)rule.getNotificationType();
+        Class notificationClass = notificationType.getNotificationClass();
+
+        if(notifications.containsKey(notificationClass))
+        {
+            notification = notifications.get(notificationClass);
+        }
+        else
+        {
+            notification = notificationType.buildNotification();
+            notifications.put(notificationClass, notification);
+        }
+
+        return notification;
+    }
+
+    private void dispatchNotifications(HashMap<Class, Notification> notifications)
+    {
+        for(Notification notification : notifications.values())
+        {
+            notificationDispatcher.dispatchNotifications(notification);
+        }
+    }
+
+    private Iterable<NotificationRule> getNotifications(NotificationSet notificationSet, final DeploymentFinishedEvent event, final DeploymentResult result)
     {
         return Iterables.filter(notificationSet.getNotificationRules(), new Predicate<NotificationRule>() {
             @Override
@@ -90,7 +119,13 @@ public class DeploymentNotificationEventListener
             {
                 NotificationType notification = input.getNotificationType();
                 DeploymentNotificationType deploymentNotification = Narrow.downTo(notification, DeploymentNotificationType.class);
-                return deploymentNotification != null && deploymentNotification.isNotificationRequired(event);
+                if(deploymentNotification == null)
+                    return false;
+
+                deploymentNotification.setDeploymentEvent(event);
+                deploymentNotification.setDeploymentResult(result);
+
+                return deploymentNotification.isNotificationRequired();
             }
         });
     }
