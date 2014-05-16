@@ -12,7 +12,6 @@ public class FailedDeploymentNotificationType extends DeploymentNotificationType
 
     public FailedDeploymentNotificationType(DeploymentResultService deploymentResultService)
     {
-
         this.deploymentResultService = deploymentResultService;
     }
 

@@ -15,7 +15,7 @@
     </organization>
 
     <name>Deployment Notifications</name>
-    <description>Provides addition deployment notifications such as when a deployment fails.</description>
+    <description>Provides notifications when a deployment fails.</description>
     <packaging>atlassian-plugin</packaging>
 
     <properties>
