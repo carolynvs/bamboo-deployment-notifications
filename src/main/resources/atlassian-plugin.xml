@@ -7,6 +7,8 @@
         <param name="plugin-logo">images/pluginLogo.png</param>
     </plugin-info>
 
+    <resource type="i18n" name="i18n" location="i18n" />
+
     <component-import key="environmentService" interface="com.atlassian.bamboo.deployments.environments.service.EnvironmentService" />
     <component-import key="deploymentResultService" interface="com.atlassian.bamboo.deployments.results.service.DeploymentResultService" />
     <component-import key="notificationDispatcher" interface="com.atlassian.bamboo.notification.NotificationDispatcher" />
@@ -22,6 +24,7 @@
 
     <notificationType key="multipleFailedDeployments" name="After X Deployment Failures" class="com.carolynvs.bamboo.plugin.deployment_notifications.MultipleFailedDeploymentsNotificationType" weight="110">
         <description>Notification sent after multiple deployment failures</description>
+        <resource type="freemarker" name="edit" location="templates/MultipleFailedDeployments/editConfig.ftl"/>
         <scope>deployment</scope>
     </notificationType>
 
