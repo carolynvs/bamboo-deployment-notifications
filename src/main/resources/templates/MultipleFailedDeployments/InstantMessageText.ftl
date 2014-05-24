@@ -1,0 +1,8 @@
+[#-- @ftlvariable name="deploymentResult" type="com.atlassian.bamboo.deployments.results.DeploymentResult" --]
+[#-- @ftlvariable name="deploymentProject" type="com.atlassian.bamboo.deployments.projects.DeploymentProject" --]
+[#-- @ftlvariable name="numFailures" type="Integer" --]
+${deploymentProject.name} ${deploymentResult.deploymentVersion.name}[#t]
+[#if deploymentResult.deploymentState == "Successful"] was successfully deployed to ${deploymentResult.environment.name} after ${numFailures} [#if numFailures = 1]failure[#else]failures[/#if].[#rt]
+[#elseif deploymentResult.deploymentState == "Failed"] failed deploying to ${deploymentResult.environment.name} (${numFailures} [#if numFailures = 1]times[#else]times[/#if]).[#rt]
+[#else] stopped deploying to ${deploymentResult.environment.name} after ${numFailures} [#if numFailures = 1]failure[#else]failures[/#if][#rt]
+[/#if]

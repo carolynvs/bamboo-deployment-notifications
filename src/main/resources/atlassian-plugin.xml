@@ -7,16 +7,25 @@
         <param name="plugin-logo">images/pluginLogo.png</param>
     </plugin-info>
 
+    <resource type="i18n" name="i18n" location="i18n" />
+
     <component-import key="environmentService" interface="com.atlassian.bamboo.deployments.environments.service.EnvironmentService" />
     <component-import key="deploymentResultService" interface="com.atlassian.bamboo.deployments.results.service.DeploymentResultService" />
     <component-import key="notificationDispatcher" interface="com.atlassian.bamboo.notification.NotificationDispatcher" />
+    <component-import key="sessionFactory" interface="com.atlassian.bamboo.persistence3.PluginHibernateSessionFactory" />
 
     <bambooEventListener key="deploymentNotificationEventListener" class="com.carolynvs.bamboo.plugin.deployment_notifications.DeploymentNotificationEventListener">
         <description>Listens for deployment events. Duplicates what is in core but allows extending the notification types.</description>
     </bambooEventListener>
 
-    <notificationType key="failedDeployment" name="Deployment Failed" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType" weight="100">
-        <description>Notification sent when a deployment fails.</description>
+    <notificationType key="failedDeployment" name="Failed Deployments And First Successful" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType" weight="100">
+        <description>Notification sent for every failed deployment</description>
+        <scope>deployment</scope>
+    </notificationType>
+
+    <notificationType key="multipleFailedDeployments" name="After X Deployment Failures" class="com.carolynvs.bamboo.plugin.deployment_notifications.MultipleFailedDeploymentsNotificationType" weight="110">
+        <description>Notification sent for after a number of consecutive failures</description>
+        <resource type="freemarker" name="edit" location="templates/MultipleFailedDeployments/editConfig.ftl"/>
         <scope>deployment</scope>
     </notificationType>
 
