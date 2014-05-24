@@ -18,13 +18,13 @@
         <description>Listens for deployment events. Duplicates what is in core but allows extending the notification types.</description>
     </bambooEventListener>
 
-    <notificationType key="failedDeployment" name="Deployment Failed" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType" weight="100">
-        <description>Notification sent when a deployment fails</description>
+    <notificationType key="failedDeployment" name="Failed Deployments And First Successful" class="com.carolynvs.bamboo.plugin.deployment_notifications.FailedDeploymentNotificationType" weight="100">
+        <description>Notification sent for every failed deployment</description>
         <scope>deployment</scope>
     </notificationType>
 
     <notificationType key="multipleFailedDeployments" name="After X Deployment Failures" class="com.carolynvs.bamboo.plugin.deployment_notifications.MultipleFailedDeploymentsNotificationType" weight="110">
-        <description>Notification sent after multiple deployment failures</description>
+        <description>Notification sent for after a number of consecutive failures</description>
         <resource type="freemarker" name="edit" location="templates/MultipleFailedDeployments/editConfig.ftl"/>
         <scope>deployment</scope>
     </notificationType>

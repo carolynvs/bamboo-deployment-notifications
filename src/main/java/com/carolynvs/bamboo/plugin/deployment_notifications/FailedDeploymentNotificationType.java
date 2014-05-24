@@ -13,12 +13,21 @@ public class FailedDeploymentNotificationType extends DeploymentNotificationType
 {
     private DeploymentResult result;
     private DeploymentEvent event;
+    private DeploymentResultService deploymentResultService;
 
     @Override
     public boolean isNotificationRequired()
     {
+        // Notify when failed
         BuildState deploymentState = result.getDeploymentState();
-        return deploymentState == BuildState.FAILED;
+        if(deploymentState != BuildState.SUCCESS)
+        {
+            return true;
+        }
+
+        // Notify on first success
+        DeploymentResult previousResult = deploymentResultService.getLastResultBefore(result);
+        return previousResult.getDeploymentState() != BuildState.SUCCESS;
     }
 
     @NotNull
@@ -48,5 +57,10 @@ public class FailedDeploymentNotificationType extends DeploymentNotificationType
     public void setDeploymentResult(@NotNull DeploymentResult result)
     {
         this.result = result;
+    }
+
+    public void setDeploymentResultService(DeploymentResultService deploymentResultService)
+    {
+        this.deploymentResultService = deploymentResultService;
     }
 }

@@ -26,7 +26,7 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
     private static final String MinFailuresInput = "minFailures";
 
     private int minFailures = 3;
-    private int numFailures;
+    private int numberOfFailures;
     private DeploymentResultService deploymentResultService;
     private TemplateRenderer templateRenderer;
     private DeploymentResult result;
@@ -40,32 +40,61 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
     @Override
     public boolean isNotificationRequired()
     {
-        if(result.getDeploymentState() == BuildState.SUCCESS)
-            return false;
+        return IsFirstSuccess() || HasReachedMinimumFailures();
+    }
 
-        DeploymentResult lastSuccess = deploymentResultService.getLastResultInStatesBefore(result, EnumSet.of(BuildState.SUCCESS));
-        long lastSuccessfulResultId = lastSuccess != null ? lastSuccess.getId() : 0;
-        long environmentId = result.getEnvironmentId();
+    private boolean HasReachedMinimumFailures()
+    {
+        if (result.getDeploymentState() == BuildState.SUCCESS)
+            return false;
 
         try
         {
-            loadNumberOfFailures(environmentId, lastSuccessfulResultId);
-            return numFailures >= minFailures;
+            loadNumberOfFailures();
+            return numberOfFailures >= minFailures;
         }
-        catch (Exception e)
+        catch (HibernateException e)
         {
+            log.error(e);
             return false;
         }
     }
 
-    private void loadNumberOfFailures(long environmentId, long lastSuccessfulResultId)
+    private boolean IsFirstSuccess()
+    {
+        if (result.getDeploymentState() != BuildState.SUCCESS)
+            return false;
+
+        DeploymentResult previousResult = deploymentResultService.getLastResultBefore(result);
+        if(previousResult != null && previousResult.getDeploymentState() == BuildState.SUCCESS)
+        {
+            return false;
+        }
+
+        try
+        {
+            loadNumberOfFailures();
+            return true;
+        }
+        catch (HibernateException e)
+        {
+            log.error(e);
+            return false;
+        }
+    }
+
+    private void loadNumberOfFailures()
             throws HibernateException
     {
+        DeploymentResult lastSuccess = deploymentResultService.getLastResultInStatesBefore(result, EnumSet.of(BuildState.SUCCESS));
+        long lastSuccessfulResultId = lastSuccess != null ? lastSuccess.getId() : 0;
+        long environmentId = result.getEnvironmentId();
+
         // the session returned from getSession is always closed, this allows us to manage our own session
         Session session = sessionFactory.getSession().getSessionFactory().openSession();
         Transaction transaction = session.beginTransaction();
 
-        numFailures = (Integer)session.createQuery(countNumberOfFailures)
+        numberOfFailures = (Integer)session.createQuery(countNumberOfFailures)
                     .setParameter("environmentId", environmentId)
                     .setParameter("lastSuccessfulResultId", lastSuccessfulResultId)
                     .uniqueResult();
@@ -161,7 +190,7 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
         MultipleFailedDeploymentsNotification notification = (MultipleFailedDeploymentsNotification)super.buildNotification();
 
         notification.setDeploymentResult(result);
-        notification.setNumberOfFailures(numFailures);
+        notification.setNumberOfFailures(numberOfFailures);
 
         return notification;
     }
