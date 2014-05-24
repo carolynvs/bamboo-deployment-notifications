@@ -33,9 +33,9 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
     private PluginHibernateSessionFactory sessionFactory;
 
     private static final String countNumberOfFailures =
-"select count(r.id) " +
+"select count(*) " +
 "from com.atlassian.bamboo.deployments.results.persistence.MutableDeploymentResultImpl r\n" +
-"where r.environment.id = :environmentId and r.id > :lastSuccessfulResultId";
+"where r.environment.id = :environmentId and r.id > :lastSuccessfulResultId and r.deploymentState != 'Successful'";
 
     @Override
     public boolean isNotificationRequired()
