@@ -5,16 +5,19 @@ import com.atlassian.bamboo.deployments.execution.events.DeploymentEvent;
 import com.atlassian.bamboo.deployments.results.DeploymentResult;
 import com.atlassian.bamboo.deployments.results.service.DeploymentResultService;
 import com.atlassian.bamboo.notification.Notification;
+import com.atlassian.bamboo.persistence3.PluginHibernateSessionFactory;
 import com.atlassian.bamboo.template.TemplateRenderer;
 import com.atlassian.bamboo.utils.error.ErrorCollection;
 import com.atlassian.bamboo.utils.error.SimpleErrorCollection;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang.StringUtils;
+import net.sf.hibernate.HibernateException;
+import net.sf.hibernate.Session;
+import net.sf.hibernate.Transaction;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Map;
 
 public class MultipleFailedDeploymentsNotificationType extends DeploymentNotificationTypeImpl
@@ -23,23 +26,51 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
     private static final String MinFailuresInput = "minFailures";
 
     private int minFailures = 3;
+    private int numFailures;
     private DeploymentResultService deploymentResultService;
     private TemplateRenderer templateRenderer;
     private DeploymentResult result;
+    private PluginHibernateSessionFactory sessionFactory;
+
+    private static final String countNumberOfFailures =
+"select count(r.id) " +
+"from com.atlassian.bamboo.deployments.results.persistence.MutableDeploymentResultImpl r\n" +
+"where r.environment.id = :environmentId and r.id > :lastSuccessfulResultId";
 
     @Override
     public boolean isNotificationRequired()
     {
-        List<DeploymentResult> recentResults = deploymentResultService.getDeploymentResultsForEnvironment(result.getEnvironmentId(), 1, minFailures - 1);
-        for (DeploymentResult recentResult : recentResults)
-        {
-            if(recentResult.getDeploymentState() != BuildState.FAILED)
-            {
-                return false;
-            }
-        }
+        if(result.getDeploymentState() == BuildState.SUCCESS)
+            return false;
 
-        return true;
+        DeploymentResult lastSuccess = deploymentResultService.getLastResultInStatesBefore(result, EnumSet.of(BuildState.SUCCESS));
+        long lastSuccessfulResultId = lastSuccess != null ? lastSuccess.getId() : 0;
+        long environmentId = result.getEnvironmentId();
+
+        try
+        {
+            loadNumberOfFailures(environmentId, lastSuccessfulResultId);
+            return numFailures >= minFailures;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
+    private void loadNumberOfFailures(long environmentId, long lastSuccessfulResultId)
+            throws HibernateException
+    {
+        // the session returned from getSession is always closed, this allows us to manage our own session
+        Session session = sessionFactory.getSession().getSessionFactory().openSession();
+        Transaction transaction = session.beginTransaction();
+
+        numFailures = (Integer)session.createQuery(countNumberOfFailures)
+                    .setParameter("environmentId", environmentId)
+                    .setParameter("lastSuccessfulResultId", lastSuccessfulResultId)
+                    .uniqueResult();
+
+        transaction.commit();
     }
 
     @Override
@@ -130,7 +161,7 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
         MultipleFailedDeploymentsNotification notification = (MultipleFailedDeploymentsNotification)super.buildNotification();
 
         notification.setDeploymentResult(result);
-        notification.setNumberOfFailures(minFailures);
+        notification.setNumberOfFailures(numFailures);
 
         return notification;
     }
@@ -154,6 +185,10 @@ public class MultipleFailedDeploymentsNotificationType extends DeploymentNotific
     public void setTemplateRenderer(TemplateRenderer templateRenderer)
     {
         this.templateRenderer = templateRenderer;
+    }
+
+    public void setPluginHibernateSessionFactory(PluginHibernateSessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 }
 

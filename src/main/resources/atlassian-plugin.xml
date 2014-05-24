@@ -12,6 +12,7 @@
     <component-import key="environmentService" interface="com.atlassian.bamboo.deployments.environments.service.EnvironmentService" />
     <component-import key="deploymentResultService" interface="com.atlassian.bamboo.deployments.results.service.DeploymentResultService" />
     <component-import key="notificationDispatcher" interface="com.atlassian.bamboo.notification.NotificationDispatcher" />
+    <component-import key="sessionFactory" interface="com.atlassian.bamboo.persistence3.PluginHibernateSessionFactory" />
 
     <bambooEventListener key="deploymentNotificationEventListener" class="com.carolynvs.bamboo.plugin.deployment_notifications.DeploymentNotificationEventListener">
         <description>Listens for deployment events. Duplicates what is in core but allows extending the notification types.</description>
