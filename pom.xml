@@ -62,4 +62,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>min-bamboo</id>
+            <properties>
+                <bamboo.version>5.4</bamboo.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>
