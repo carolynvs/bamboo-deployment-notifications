@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.carolynvs</groupId>
     <artifactId>deployment-notifications</artifactId>
-    <version>1.1.0.${buildNumber}</version>
+    <version>1.2.0.${buildNumber}</version>
 
     <organization>
         <name>Carolyn Van Slyck</name>
@@ -20,9 +20,9 @@
 
     <properties>
         <buildNumber>SNAPSHOT</buildNumber>
-        <bamboo.version>5.8.1</bamboo.version>
-        <bamboo.data.version>3.2.2</bamboo.data.version>
-        <amps.version>5.0.4</amps.version>
+        <bamboo.version>6.0.1</bamboo.version>
+        <bamboo.data.version>6.0.1</bamboo.data.version>
+        <amps.version>6.2.11</amps.version>
         <plugin.testrunner.version>1.1.4</plugin.testrunner.version>
     </properties>
 
@@ -57,8 +57,8 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
         </plugins>
