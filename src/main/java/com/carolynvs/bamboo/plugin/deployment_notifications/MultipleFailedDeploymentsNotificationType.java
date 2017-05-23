@@ -12,7 +12,7 @@ import com.atlassian.bamboo.utils.error.SimpleErrorCollection;
 import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
 import org.hibernate.*;
-import org.hibernate.classic.Session;
+import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
